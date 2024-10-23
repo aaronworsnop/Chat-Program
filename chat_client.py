@@ -54,7 +54,7 @@ class ChatClient():
             msg = receive(self.sock)
             print(msg)
             if 'Welcome' in msg:  # success message contains 'Welcome'
-                self.prompt = f'[{username}@{socket.gethostname()}]> '
+                self.prompt = f''
                 threading.Thread(target=get_and_send, args=(self,)).start()
             else:
                 print("Failed to log in or register. Exiting.")

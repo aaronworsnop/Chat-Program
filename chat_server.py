@@ -65,13 +65,21 @@ class ChatServer(object):
 
                 if username in self.username_registry:
                     send(
-                        client, f'Username {username} already exists. Try logging in.')
+                        client, f'Username "{username}" already exists. Try logging in.')
                     return self.handle_registration_or_login(client)
                 else:
                     self.username_registry[username] = client
                     self.currently_chatting[username] = client
                     send(
                         client, f'Registered successfully. Welcome, {username}!')
+                    if (len(self.currently_chatting) - 1) == 0:
+                        send(client, 'You are the only user online.')
+                    elif (len(self.currently_chatting) - 1) == 1:
+                        send(
+                            client, f'There is 1 other user online.')
+                    else:
+                        send(
+                            client, f'There are {len(self.currently_chatting) - 1} other users online.')
                     return username
 
             elif response == 'login':
@@ -85,12 +93,20 @@ class ChatServer(object):
                 if username in self.username_registry:
                     if username in self.currently_chatting:
                         send(
-                            client, f'User {username} is already logged in. Please try another username or wait until they log out.')
+                            client, f'User "{username}" is already logged in. ')
                         return self.handle_registration_or_login(client)
                     else:
                         send(
                             client, f'Logged in successfully. Welcome back, {username}!')
                         self.currently_chatting[username] = client
+                        if (len(self.currently_chatting) - 1) == 0:
+                            send(client, 'You are the only user online.')
+                        elif (len(self.currently_chatting) - 1) == 1:
+                            send(
+                                client, f'There is 1 other user online.')
+                        else:
+                            send(
+                                client, f'There are {len(self.currently_chatting) - 1} other users online.')
                         return username
                 else:
                     send(client, 'Username not found. Please register or try again.')
@@ -121,7 +137,7 @@ class ChatServer(object):
                     # handle the server socket
                     client, address = self.server.accept()
                     print(
-                        f'Chat server: got connection {client.fileno()} from {address}')
+                        f'Chat Application server: got connection {client.fileno()} from {address}')
 
                     # Handle registration or login
                     username = self.handle_registration_or_login(client)
@@ -136,7 +152,7 @@ class ChatServer(object):
                     inputs.append(client)
 
                     # Broadcast new client joined
-                    msg = f'\n(Connected: New client connected with username: {username})'
+                    msg = f'\n(Connected: New client connected with username: "{username}")\n'
                     for output in self.outputs:
                         send(output, msg)
                     self.outputs.append(client)
@@ -147,7 +163,7 @@ class ChatServer(object):
                         data = receive(sock)
                         if data:
                             # Send as new client's message...
-                            msg = f'\n#[{self.get_client_name(sock)}]>> {data}'
+                            msg = f'{self.get_client_name(sock)} | {data}'
 
                             # Send data to all except ourself
                             for output in self.outputs:
@@ -156,7 +172,7 @@ class ChatServer(object):
                         else:
                             username = self.get_client_name(sock)
                             print(
-                                f'Chat server: {sock.fileno()} ({username}) hung up')
+                                f'Chat server: {sock.fileno()} ("{username}") hung up')
                             self.clients -= 1
                             sock.close()
                             inputs.remove(sock)
@@ -167,7 +183,7 @@ class ChatServer(object):
                                 del self.currently_chatting[username]
 
                             # Sending client leaving information to others
-                            msg = f'\n(Now hung up: Client {username})'
+                            msg = f'\n(Disconnected: Client "{username}" disconnected from the chat)\n'
                             for output in self.outputs:
                                 send(output, msg)
                     except socket.error as e:
