@@ -162,13 +162,22 @@ class ChatServer(object):
                     try:
                         data = receive(sock)
                         if data:
-                            # Send as new client's message...
-                            msg = f'| {self.get_client_name(sock)}: {data}'
 
-                            # Send data to all except ourself
-                            for output in self.outputs:
-                                if output != sock:
-                                    send(output, msg)
+                            # Check if the message exceeds the character limit
+                            if len(data) > 500:
+                                warning_msg = "***WARNING*** Your message exceeds the 500 character limit and was not sent."
+                                # Inform the user their message is too long
+                                send(sock, warning_msg)
+
+                            else:
+
+                                # Send as new client's message...
+                                msg = f'| {self.get_client_name(sock)}: {data}'
+
+                                # Send data to all except ourself
+                                for output in self.outputs:
+                                    if output != sock:
+                                        send(output, msg)
                         else:
                             username = self.get_client_name(sock)
                             print(
