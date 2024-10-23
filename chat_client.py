@@ -1,11 +1,9 @@
+import argparse
 import select
 import socket
 import sys
-import signal
-import argparse
 import threading
 import ssl
-
 from utils import *
 
 SERVER_HOST = 'localhost'
@@ -23,8 +21,7 @@ def get_and_send(client):
 class ChatClient():
     """ A command line chat client using select """
 
-    def __init__(self, name, port, host=SERVER_HOST):
-        self.name = name
+    def __init__(self, port, host=SERVER_HOST):
         self.connected = False
         self.host = host
         self.port = port
@@ -33,7 +30,7 @@ class ChatClient():
         self.context.set_ciphers('AES128-SHA')
 
         # Initial prompt
-        self.prompt = f'[{name}@{socket.gethostname()}]> '
+        self.prompt = ''
 
         # Connect to server at port
         try:
@@ -45,14 +42,23 @@ class ChatClient():
             print(f'Now connected to chat server@ port {self.port}')
             self.connected = True
 
-            # Send my name...
-            send(self.sock, 'NAME: ' + self.name)
+            # Register or login
             data = receive(self.sock)
+            print(data)
+            choice = input('> ').strip().lower()
+            send(self.sock, choice)
 
-            # Contains client address, set it
-            addr = data.split('CLIENT: ')[1]
-            self.prompt = '[' + '@'.join((self.name, addr)) + ']> '
+            # Process username input
+            username_prompt = receive(self.sock)
+            print(username_prompt)
+            username = input('> ').strip()
+            send(self.sock, username)
 
+            # Receive success message
+            msg = receive(self.sock)
+            print(msg)
+
+            self.prompt = f'[{username}@{socket.gethostname()}]> '
             threading.Thread(target=get_and_send, args=(self,)).start()
 
         except socket.error as e:
@@ -70,16 +76,9 @@ class ChatClient():
                 sys.stdout.write(self.prompt)
                 sys.stdout.flush()
 
-                # Wait for input from stdin and socket
-                # readable, writeable, exceptional = select.select([0, self.sock], [], [])
-                readable, writeable, exceptional = select.select(
-                    [self.sock], [], [])
+                readable, _, _ = select.select([self.sock], [], [])
 
                 for sock in readable:
-                    # if sock == 0:
-                    #     data = sys.stdin.readline().strip()
-                    #     if data:
-                    #         send(self.sock, data)
                     if sock == self.sock:
                         data = receive(self.sock)
                         if not data:
@@ -91,21 +90,18 @@ class ChatClient():
                             sys.stdout.flush()
 
             except KeyboardInterrupt:
-                print(" Client interrupted. " "")
-                stop_thread = True
+                print(" Client interrupted.")
                 self.cleanup()
                 break
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--name', action="store", dest="name", required=True)
     parser.add_argument('--port', action="store",
                         dest="port", type=int, required=True)
     given_args = parser.parse_args()
 
     port = given_args.port
-    name = given_args.name
 
-    client = ChatClient(name=name, port=port)
+    client = ChatClient(port=port)
     client.run()
