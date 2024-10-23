@@ -29,15 +29,11 @@ class ChatClient():
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
         self.context.set_ciphers('AES128-SHA')
 
-        # Initial prompt
-        self.prompt = ''
-
         # Connect to server at port
         try:
             self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.sock = self.context.wrap_socket(
                 self.sock, server_hostname=host)
-
             self.sock.connect((host, self.port))
             print(f'Now connected to chat server@ port {self.port}')
             self.connected = True
@@ -54,12 +50,16 @@ class ChatClient():
             username = input('> ').strip()
             send(self.sock, username)
 
-            # Receive success message
+            # Check if registration/login was successful before setting the username
             msg = receive(self.sock)
             print(msg)
-
-            self.prompt = f'[{username}@{socket.gethostname()}]> '
-            threading.Thread(target=get_and_send, args=(self,)).start()
+            if 'Welcome' in msg:  # success message contains 'Welcome'
+                self.prompt = f'[{username}@{socket.gethostname()}]> '
+                threading.Thread(target=get_and_send, args=(self,)).start()
+            else:
+                print("Failed to log in or register. Exiting.")
+                self.connected = False
+                self.sock.close()
 
         except socket.error as e:
             print(f'Failed to connect to chat server @ port {self.port}')

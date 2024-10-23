@@ -46,36 +46,55 @@ class ChatServer(object):
 
     def handle_registration_or_login(self, client):
         """ Handles user registration or login """
-        send(client, 'Do you want to [register] or [login]?')
-        response = receive(client).lower()
+        try:
+            send(client, 'Do you want to [register] or [login]?')
+            response = receive(client).lower()
 
-        if response == 'register':
-            send(client, 'Enter a username to register:')
-            username = receive(client).strip()
-            if username in self.username_registry:
-                send(
-                    client, f'Username {username} already exists. Try logging in.')
-                return self.handle_registration_or_login(client)
+            if not response:
+                raise ConnectionError(
+                    "Client disconnected during registration/login process.")
+
+            if response == 'register':
+                send(client, 'Enter a username to register:')
+                username = receive(client).strip()
+
+                if not username:
+                    raise ConnectionError(
+                        "Client disconnected during username input.")
+
+                if username in self.username_registry:
+                    send(
+                        client, f'Username {username} already exists. Try logging in.')
+                    return self.handle_registration_or_login(client)
+                else:
+                    self.username_registry[username] = client
+                    send(
+                        client, f'Registered successfully. Welcome, {username}!')
+                    return username
+
+            elif response == 'login':
+                send(client, 'Enter your username to log in:')
+                username = receive(client).strip()
+
+                if not username:
+                    raise ConnectionError(
+                        "Client disconnected during username input.")
+
+                if username in self.username_registry:
+                    send(
+                        client, f'Logged in successfully. Welcome back, {username}!')
+                    return username
+                else:
+                    send(client, 'Username not found. Please register or try again.')
+                    return self.handle_registration_or_login(client)
+
             else:
-                self.username_registry[username] = client
-                send(client, f'Registered successfully. Welcome, {username}!')
-                return username
-
-        elif response == 'login':
-            send(client, 'Enter your username to log in:')
-            username = receive(client).strip()
-            if username in self.username_registry:
                 send(
-                    client, f'Logged in successfully. Welcome back, {username}!')
-                return username
-            else:
-                send(client, 'Username not found. Please register or try again.')
+                    client, 'Invalid option. Please choose [register] or [login].')
                 return self.handle_registration_or_login(client)
-
-        else:
-            send(
-                client, 'Invalid option. Please choose [register] or [login].')
-            return self.handle_registration_or_login(client)
+        except (ConnectionError, ssl.SSLError) as e:
+            print(f"Error: {e}")
+            return None
 
     def run(self):
         inputs = [self.server]
@@ -99,13 +118,17 @@ class ChatServer(object):
                     # Handle registration or login
                     username = self.handle_registration_or_login(client)
 
+                    if not username:  # Client disconnected during registration/login
+                        client.close()
+                        continue
+
                     # Save the client in the clientmap
                     self.clients += 1
                     self.clientmap[client] = (address, username)
                     inputs.append(client)
 
                     # Broadcast new client joined
-                    msg = f'\n(Connected: New client ({self.clients}) from {username})'
+                    msg = f'\n(Connected: New client connected with username: {username})'
                     for output in self.outputs:
                         send(output, msg)
                     self.outputs.append(client)
