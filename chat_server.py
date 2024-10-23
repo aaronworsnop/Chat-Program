@@ -73,13 +73,13 @@ class ChatServer(object):
                     send(
                         client, f'Registered successfully. Welcome, {username}!')
                     if (len(self.currently_chatting) - 1) == 0:
-                        send(client, 'You are the only user online.')
+                        send(client, 'You are the only user online.\n')
                     elif (len(self.currently_chatting) - 1) == 1:
                         send(
-                            client, f'There is 1 other user online.')
+                            client, f'There is 1 other user online.\n')
                     else:
                         send(
-                            client, f'There are {len(self.currently_chatting) - 1} other users online.')
+                            client, f'There are {len(self.currently_chatting) - 1} other users online.\n')
                     return username
 
             elif response == 'login':
