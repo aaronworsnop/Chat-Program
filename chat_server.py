@@ -17,6 +17,7 @@ class ChatServer(object):
         self.clientmap = {}
         self.outputs = []  # list output sockets
         self.username_registry = {}  # A simple user registry for authentication
+        self.currently_chatting = {}  # A dictionary of clients currently chatting
 
         self.context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
         self.context.load_cert_chain(certfile="cert.pem", keyfile="cert.pem")
@@ -68,6 +69,7 @@ class ChatServer(object):
                     return self.handle_registration_or_login(client)
                 else:
                     self.username_registry[username] = client
+                    self.currently_chatting[username] = client
                     send(
                         client, f'Registered successfully. Welcome, {username}!')
                     return username
@@ -81,9 +83,15 @@ class ChatServer(object):
                         "Client disconnected during username input.")
 
                 if username in self.username_registry:
-                    send(
-                        client, f'Logged in successfully. Welcome back, {username}!')
-                    return username
+                    if username in self.currently_chatting:
+                        send(
+                            client, f'User {username} is already logged in. Please try another username or wait until they log out.')
+                        return self.handle_registration_or_login(client)
+                    else:
+                        send(
+                            client, f'Logged in successfully. Welcome back, {username}!')
+                        self.currently_chatting[username] = client
+                        return username
                 else:
                     send(client, 'Username not found. Please register or try again.')
                     return self.handle_registration_or_login(client)
@@ -146,15 +154,20 @@ class ChatServer(object):
                                 if output != sock:
                                     send(output, msg)
                         else:
-                            print(f'Chat server: {sock.fileno()} hung up')
+                            username = self.get_client_name(sock)
+                            print(
+                                f'Chat server: {sock.fileno()} ({username}) hung up')
                             self.clients -= 1
                             sock.close()
                             inputs.remove(sock)
                             self.outputs.remove(sock)
 
-                            # Sending client leaving information to others
-                            msg = f'\n(Now hung up: Client from {self.get_client_name(sock)})'
+                            # Remove the user from currently_chatting on disconnection
+                            if username in self.currently_chatting:
+                                del self.currently_chatting[username]
 
+                            # Sending client leaving information to others
+                            msg = f'\n(Now hung up: Client {username})'
                             for output in self.outputs:
                                 send(output, msg)
                     except socket.error as e:
