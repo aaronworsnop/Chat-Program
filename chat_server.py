@@ -114,7 +114,7 @@ class ChatServer(object):
 
             else:
                 send(
-                    client, 'Invalid option. Please choose [register] or [login].')
+                    client, 'Invalid option. Please try again.')
                 return self.handle_registration_or_login(client)
         except (ConnectionError, ssl.SSLError) as e:
             print(f"Error: {e}")

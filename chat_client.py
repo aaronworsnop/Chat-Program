@@ -46,9 +46,16 @@ class ChatClient():
 
             # Process username input
             username_prompt = receive(self.sock)
-            print(username_prompt)
-            username = input('> ').strip()
-            send(self.sock, username)
+
+            if 'Invalid' in username_prompt:
+                print(username_prompt)
+                self.connected = False
+                self.sock.close()
+                return
+            else:
+                print(username_prompt)
+                username = input('> ').strip()
+                send(self.sock, username)
 
             # Check if registration/login was successful before setting the username
             msg = receive(self.sock)
