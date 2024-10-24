@@ -2,6 +2,8 @@
 ## One-on-one chatting application written in Python
 `Python` `Computer Networks` `TCP` `Encryption`
 
+![image](https://github.com/user-attachments/assets/0a43f279-4ac0-4e7f-8060-edc815ebdaca)
+
 ### Installation
 If you already have the source code installed, move onto *Running the Application.* Ensure that the project folder is unzipped.
 
