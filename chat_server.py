@@ -172,7 +172,7 @@ class ChatServer(object):
                             else:
 
                                 # Send as new client's message...
-                                msg = f'| {self.get_client_name(sock)}: {data}'
+                                msg = f'| [{self.get_client_name(sock)}]: {data}'
 
                                 # Send data to all except ourself
                                 for output in self.outputs:
