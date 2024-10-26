@@ -1,5 +1,5 @@
 # Chat Program
-## One-on-one chatting application written in Python
+## Group chatting application written in Python
 `Python` `Computer Networks` `TCP` `Encryption`
 
 ![image](https://github.com/user-attachments/assets/0a43f279-4ac0-4e7f-8060-edc815ebdaca)
